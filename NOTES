@@ -1,0 +1,10 @@
+- The pre-built OpenCV framework didn't work until I did:
+
+cd /Users/ivan/Documents/QCFaceDetection/OpenCV.framework
+install_name_tool -id \
+  "@loader_path/../Frameworks/OpenCV.framework/Versions/A/OpenCV" \
+  Versions/A/OpenCV
+  
+
+
+- disable-enable vs stop-start for memory allocation?
