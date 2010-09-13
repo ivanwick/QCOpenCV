@@ -14,6 +14,8 @@
 	IplImage * ocvImage;
 	CvHaarClassifierCascade *cascade;
 	CvMemStorage *storage;
+	
+	BOOL lastTest;
 }
 
 /*
@@ -25,5 +27,12 @@ You can access their values in the appropriate plug-in methods using self.inputF
 
 @property(assign /*dynamic*/) id<QCPlugInInputImageSource> inputImage;
 
+@property(assign) BOOL inputTest;
+@property(assign) double outputTest;
+@property(assign) double outputWidth;
+@property(assign) double outputHeight;
+@property(assign) double outputPositionX;
+@property(assign) double outputPositionY;
+@property(assign) double outputFaceDetected;
 
 @end

@@ -22,6 +22,14 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 */
 
 @dynamic inputImage;
+@dynamic inputTest;
+@dynamic outputTest;
+
+@dynamic outputWidth;
+@dynamic outputHeight;
+@dynamic outputPositionX;
+@dynamic outputPositionY;
+@dynamic outputFaceDetected;
 
 + (NSDictionary*) attributes
 {
@@ -65,6 +73,27 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 		/*
 		Allocate any permanent resource required by the plug-in.
 		*/
+		
+		/** allocation here */
+		// IplImage for the frame (just the struct, whose pointers to image data we
+		// will set as necessary.
+		ocvImage = (IplImage*)malloc(sizeof(IplImage));
+		
+		// IplImage for downsampling?
+		/* ??? */
+		
+		// CvClassifierCascade
+		cascade = (CvHaarClassifierCascade*)cvLoad(
+												   "/usr/local/share/opencv/haarcascades/haarcascade_frontalface_alt2.xml"
+												   , 0, 0, 0);
+		
+		// CvMemStorage
+		storage = cvCreateMemStorage(0);
+		
+		/**/
+		
+		/* for testing */
+		cvNamedWindow("mainWin", CV_WINDOW_AUTOSIZE);
 	}
 	
 	return self;
@@ -76,6 +105,20 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 	Release any non garbage collected resources created in -init.
 	*/
 	
+	/** allocation here */
+	// IplImage for the frame
+	free(&ocvImage);
+	
+	// IplImage for downsampling?
+	/* ??? nothing yet */
+	
+	// CvMemStorage
+	cvReleaseMemStorage(&storage);
+	
+	// CvClassifierCascade
+	cvReleaseHaarClassifierCascade(&cascade);
+	/**/		
+
 	[super finalize];
 }
 
@@ -88,6 +131,11 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 	[super dealloc];
 }
 
+-(NSRect*)detectFirstFace
+{
+	return nil;
+}
+
 @end
 
 @implementation QCFaceDetectionPlugIn (Execution)
@@ -98,25 +146,7 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 	Called by Quartz Composer when rendering of the composition starts: perform any required setup for the plug-in.
 	Return NO in case of fatal failure (this will prevent rendering of the composition to start).
 	*/
-	
-	/** allocation here */
-	// IplImage for the frame (just the struct, whose pointers to image data we
-	// will set as necessary.
-    ocvImage = (IplImage*)malloc(sizeof(IplImage));
-	
-	// IplImage for downsampling?
-	/* ??? */
-	
-	// CvClassifierCascade
-	cascade = (CvHaarClassifierCascade*)cvLoad(
-		"/usr/local/share/opencv/haarcascades/haarcascade_frontalface_alt2.xml"
-		 , 0, 0, 0);
 
-	// CvMemStorage
-	storage = cvCreateMemStorage(0);
-	
-	/**/
-	
 	return YES;
 }
 
@@ -127,7 +157,7 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 	*/
 }
 
-- (BOOL) execute:(id<QCPlugInContext>)context atTime:(NSTimeInterval)time withArguments:(NSDictionary*)arguments
+- (BOOL)execute:(id<QCPlugInContext>)context atTime:(NSTimeInterval)time withArguments:(NSDictionary*)arguments
 {
 	/*
 	Called by Quartz Composer whenever the plug-in instance needs to execute.
@@ -138,12 +168,12 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 	CGLContextObj cgl_ctx = [context CGLContextObj];
 	*/
 	
-	BOOL opstatus;
+	BOOL opstatus = YES;
 	id<QCPlugInInputImageSource>	qcImage = self.inputImage;
 
-	NSString*						pixelFormat;
-	CGColorSpaceRef					colorSpace;
-	
+	NSString*						pixelFormat = nil;
+	CGColorSpaceRef					colorSpace = nil;
+	NSRect* faceRect = nil;
 	
 	/* Make sure we have a new image */
 	if(![self didValueForInputKeyChange:@"inputImage"] ||
@@ -157,35 +187,35 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 		pixelFormat = QCPlugInPixelFormatI8;
 	}
 	else if(CGColorSpaceGetModel(colorSpace) == kCGColorSpaceModelRGB) {
-		NSLog(@"kCGColorSpaceModelRGB will it convert?");
-		/*
+		/* Use monochrome pixel format anyway */
+		//pixelFormat = QCPlugInPixelFormatI8;
+		//NSLog(@"kCGColorSpaceModelRGB will it convert?");
+		/**/
 		#if __BIG_ENDIAN__
 		pixelFormat = QCPlugInPixelFormatARGB8;
 		#else
 		pixelFormat = QCPlugInPixelFormatBGRA8;
 		#endif
-		 */
+		/**/
 	}
 	else {
 		return NO;
 	}
 	
-	/* Get a buffer representation from the image in its native colorspace */
-	if(![qcImage lockBufferRepresentationWithPixelFormat:pixelFormat colorSpace:colorSpace forBounds:[qcImage imageBounds]])
-		return NO;
+	// NSLog(@"trying %@", pixelFormat);
 	
-	
-	opstatus = [qcImage lockBufferRepresentationWithPixelFormat:QCPlugInPixelFormatI8
-														colorSpace:kCGColorSpaceModelMonochrome
-														 forBounds:[qcImage imageBounds]];
+	opstatus = [qcImage lockBufferRepresentationWithPixelFormat:pixelFormat
+													 colorSpace:[qcImage imageColorSpace]
+													  forBounds:[qcImage imageBounds]];
+	// NSLog(@"return status was %@", opstatus ? @"YES" : @"NO" );
 	if (!opstatus) { return NO; }
 
 	
 	/* vvv copy-paste from CVOCV */
-	//Fill in the OpenCV image struct from the data from CoreVideo.
+	//Fill in the OpenCV image struct with the data from the buffer.
     ocvImage->nSize       = sizeof(IplImage);
     ocvImage->ID          = 0;
-    ocvImage->nChannels   = 1;
+    ocvImage->nChannels   = 4;  // BGRA
     ocvImage->depth       = IPL_DEPTH_8U;
     ocvImage->dataOrder   = 0;
     ocvImage->origin      = 0; //Top left origin.
@@ -201,7 +231,19 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
     ocvImage->imageDataOrigin = (char*)[qcImage bufferBaseAddress];
 	/* ^^^ copy-paste from CVOCV */
 	
-	// rect = [self detectFirstFace];
+
+	// faceRect = [self detectFirstFace:ocvImage];
+	
+	
+	if (lastTest == NO && self.inputTest == YES) {
+		lastTest = self.inputTest;
+		NSLog(@"booltest");
+		cvShowImage("mainWin", ocvImage);
+	}
+	lastTest = self.inputTest;
+	self.outputTest = self.inputTest;
+	// NSLog(@"lastBool");
+		
 	
 	[qcImage unlockBufferRepresentation];
 
@@ -213,20 +255,6 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 	/*
 	Called by Quartz Composer when the plug-in instance stops being used by Quartz Composer.
 	*/
-	
-	/** allocation here */
-	// IplImage for the frame
-	free(&ocvImage);
-	
-	// IplImage for downsampling?
-	/* ??? nothing yet */
-	
-	// CvMemStorage
-	cvReleaseMemStorage(&storage);
-	
-	// CvClassifierCascade
-	cvReleaseHaarClassifierCascade(&cascade);
-	/**/	
 }
 
 - (void) stopExecution:(id<QCPlugInContext>)context
