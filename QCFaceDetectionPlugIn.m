@@ -131,9 +131,9 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 	[super dealloc];
 }
 
--(NSRect*)detectFirstFace
+-(CGRect)detectFirstFace:(IplImage*)frameImage
 {
-	return nil;
+	return CGRectNull;
 }
 
 @end
@@ -173,7 +173,7 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 
 	NSString*						pixelFormat = nil;
 	CGColorSpaceRef					colorSpace = nil;
-	NSRect* faceRect = nil;
+	CGRect faceRect = CGRectNull;
 	
 	/* Make sure we have a new image */
 	if(![self didValueForInputKeyChange:@"inputImage"] ||
@@ -232,9 +232,19 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 	/* ^^^ copy-paste from CVOCV */
 	
 
-	// faceRect = [self detectFirstFace:ocvImage];
+	faceRect = [self detectFirstFace:ocvImage];
 	
-	
+	if (CGRectIsNull(faceRect)) {
+		self.outputFaceDetected = NO;
+	}
+	else {
+		self.outputPositionX = faceRect.origin.x;
+		self.outputPositionY = faceRect.origin.y;
+		self.outputWidth = faceRect.size.width;
+		self.outputHeight = faceRect.size.height;
+		self.outputFaceDetected = YES;
+	}
+	 
 	if (lastTest == NO && self.inputTest == YES) {
 		lastTest = self.inputTest;
 		NSLog(@"booltest");
