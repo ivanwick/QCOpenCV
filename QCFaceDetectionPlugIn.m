@@ -131,9 +131,73 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 	[super dealloc];
 }
 
+
+#define MAX_TOTAL_PIXELS 500000
+
 -(CGRect)detectFirstFace:(IplImage*)frameImage
 {
-	return CGRectNull;
+	CGRect featRect = CGRectNull;
+	CGSize adjustedSize = CGSizeZero;
+	IplImage * grayImage;
+	IplImage * workingImage;
+	
+	/* convert to grayscale */
+	grayImage = cvCreateImage(cvSize(frameImage->width, frameImage->height),
+							  IPL_DEPTH_8U, 1);
+	cvCvtColor(frameImage, grayImage, CV_BGR2GRAY);
+	
+	/* we don't want to run the feature detector on more pixels than our limit */
+	if ((frameImage->width * frameImage->height) > MAX_TOTAL_PIXELS) {
+		adjustedSize = [self resize:CGSizeMake(frameImage->width,
+											   frameImage->height)
+					 forTotalPixels:MAX_TOTAL_PIXELS];
+		
+		IplImage *resizedImage;
+		resizedImage = cvCreateImage(cvSize(adjustedSize.width, adjustedSize.height),
+									 IPL_DEPTH_8U, 1);
+		cvResize(grayImage, resizedImage, CV_INTER_LINEAR);
+		cvReleaseImage(&grayImage);
+		workingImage = resizedImage;
+		
+	}
+	else {
+		workingImage = grayImage;
+	}
+		
+	CvSeq* features = cvHaarDetectObjects(workingImage, cascade, storage,
+										1.1, 2, CV_HAAR_DO_CANNY_PRUNING,
+										cvSize (30, 30));
+	
+	cvReleaseImage(&workingImage);
+	
+	int i;
+	for (i = 0; i < (features ? features->total : 0); i++)
+	{
+		CvRect* r = (CvRect*) cvGetSeqElem (features, i);
+		featRect = CGRectMake(r->x, r->y, r->width, r->height);
+		/*
+		NSLog(@"face found at { {%f, %f}, {%f, %f} }",
+			  featRect.origin.x, featRect.origin.y,
+			  featRect.size.width, featRect.size.height);
+		 */
+		break; /* only get the first one */
+	}
+	
+	cvClearMemStorage(storage);
+	
+	/* transform coordinates if the image was resized */
+	/* flip coordinates for bottom-left origin */
+	
+	return featRect;
+}
+
+/* calculates a new CGSize having an area of the given number of pixels and
+   preserving the aspect ratio
+ */
+-(CGSize)resize:(CGSize)origSize forTotalPixels:(int)pixels
+{
+	CGFloat aspect = origSize.width / origSize.height;
+	return CGSizeMake(sqrt(pixels * aspect), sqrt(pixels / aspect));
 }
 
 @end

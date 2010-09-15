@@ -35,4 +35,8 @@ You can access their values in the appropriate plug-in methods using self.inputF
 @property(assign) double outputPositionY;
 @property(assign) double outputFaceDetected;
 
+
+-(CGSize)resize:(CGSize)origSize forTotalPixels:(int)pixels;
+-(CGRect)detectFirstFace:(IplImage*)frameImage;
+
 @end
