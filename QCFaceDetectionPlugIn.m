@@ -131,15 +131,17 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 }
 
 
-#define MAX_TOTAL_PIXELS 500000
+#define MAX_TOTAL_PIXELS 50000
 
 -(CGRect)detectFirstFace:(IplImage*)frameImage
 {
 	CGRect featRect = CGRectNull;
 	IplImage * grayImage;
 	IplImage * workingImage;
-	
-	CGSize extractSize = CGSizeMake(frameImage->width, frameImage->height);
+	IplImage *resizedImage = NULL;
+	CGFloat detectionScale = 0;
+	CGSize detectionSize;
+
 	/* convert to grayscale */
 	grayImage = cvCreateImage(cvSize(frameImage->width, frameImage->height),
 							  IPL_DEPTH_8U, 1);
@@ -147,20 +149,21 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 	
 	/* we don't want to run the feature detector on more pixels than our limit */
 	if ((frameImage->width * frameImage->height) > MAX_TOTAL_PIXELS) {
-		extractSize = [self resize:CGSizeMake(frameImage->width,
+		detectionSize = [self resize:CGSizeMake(frameImage->width,
 											   frameImage->height)
 					 forTotalPixels:MAX_TOTAL_PIXELS];
 		
-		IplImage *resizedImage;
-		resizedImage = cvCreateImage(cvSize(extractSize.width, extractSize.height),
+		resizedImage = cvCreateImage(cvSize(detectionSize.width, detectionSize.height),
 									 IPL_DEPTH_8U, 1);
 		cvResize(grayImage, resizedImage, CV_INTER_LINEAR);
 		cvReleaseImage(&grayImage);
 		workingImage = resizedImage;
-		
+		detectionScale = frameImage->width / detectionSize.width;
 	}
 	else {
 		workingImage = grayImage;
+		detectionSize = CGSizeMake(frameImage->width, frameImage->height);
+		detectionScale = 1;
 	}
 		
 	CvSeq* features = cvHaarDetectObjects(workingImage, cascade, storage,
@@ -184,11 +187,18 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 	
 	cvClearMemStorage(storage);
 	
-	/* transform coordinates if the image was resized */
-	CGRect flippedRect = [self flipCoordinates:featRect withinSize:extractSize];
-	
 	/* flip coordinates for bottom-left origin */
-	
+	CGRect flippedRect = [self flipCoordinates:featRect withinSize:detectionSize];
+
+	/* transform coordinates if the image was resized */
+	if (detectionScale != 1) {
+		/* is there a better way to apply this scale transform?? */
+		flippedRect.size.width *= detectionScale;
+		flippedRect.size.height *= detectionScale;
+		flippedRect.origin.x *= detectionScale;
+		flippedRect.origin.y *= detectionScale;
+	}
+
 	return flippedRect;
 }
 
