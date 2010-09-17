@@ -38,5 +38,6 @@ You can access their values in the appropriate plug-in methods using self.inputF
 
 -(CGSize)resize:(CGSize)origSize forTotalPixels:(int)pixels;
 -(CGRect)detectFirstFace:(IplImage*)frameImage;
+-(CGRect)flipCoordinates:(CGRect)r withinSize:(CGSize)s;
 
 @end

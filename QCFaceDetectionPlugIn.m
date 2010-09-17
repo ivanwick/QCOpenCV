@@ -137,10 +137,10 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 -(CGRect)detectFirstFace:(IplImage*)frameImage
 {
 	CGRect featRect = CGRectNull;
-	CGSize adjustedSize = CGSizeZero;
 	IplImage * grayImage;
 	IplImage * workingImage;
 	
+	CGSize extractSize = CGSizeMake(frameImage->width, frameImage->height);
 	/* convert to grayscale */
 	grayImage = cvCreateImage(cvSize(frameImage->width, frameImage->height),
 							  IPL_DEPTH_8U, 1);
@@ -148,12 +148,12 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 	
 	/* we don't want to run the feature detector on more pixels than our limit */
 	if ((frameImage->width * frameImage->height) > MAX_TOTAL_PIXELS) {
-		adjustedSize = [self resize:CGSizeMake(frameImage->width,
+		extractSize = [self resize:CGSizeMake(frameImage->width,
 											   frameImage->height)
 					 forTotalPixels:MAX_TOTAL_PIXELS];
 		
 		IplImage *resizedImage;
-		resizedImage = cvCreateImage(cvSize(adjustedSize.width, adjustedSize.height),
+		resizedImage = cvCreateImage(cvSize(extractSize.width, extractSize.height),
 									 IPL_DEPTH_8U, 1);
 		cvResize(grayImage, resizedImage, CV_INTER_LINEAR);
 		cvReleaseImage(&grayImage);
@@ -186,9 +186,11 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 	cvClearMemStorage(storage);
 	
 	/* transform coordinates if the image was resized */
+	CGRect flippedRect = [self flipCoordinates:featRect withinSize:extractSize];
+	
 	/* flip coordinates for bottom-left origin */
 	
-	return featRect;
+	return flippedRect;
 }
 
 /* calculates a new CGSize having an area of the given number of pixels and
@@ -198,6 +200,16 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 {
 	CGFloat aspect = origSize.width / origSize.height;
 	return CGSizeMake(sqrt(pixels * aspect), sqrt(pixels / aspect));
+}
+
+
+/* convert a rectangle that uses a top-left origin, +x downward coord system to
+   one that uses a bottom-left origin, +x upward coords
+ */
+-(CGRect)flipCoordinates:(CGRect)r withinSize:(CGSize)s
+{
+	return CGRectMake(r.origin.x, s.height - (r.size.height + r.origin.y), 
+					  r.size.width, r.size.height);
 }
 
 @end
