@@ -25,6 +25,7 @@
 		16BA95420A7EB2EB001E4983 /* QCFaceDetectionPlugIn.m in Sources */ = {isa = PBXBuildFile; fileRef = 16BA95410A7EB2EB001E4983 /* QCFaceDetectionPlugIn.m */; };
 		16BA96310A7EB9AC001E4983 /* Quartz.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 16BA96300A7EB9AC001E4983 /* Quartz.framework */; };
 		2C6FB733123890D10065C148 /* OpenCV.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2CEE64C71236B2A80073B855 /* OpenCV.framework */; };
+		2CB49C811243D26400A6F97A /* haarcascade_frontalface_alt2.xml in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2CEE64651236B1E30073B855 /* haarcascade_frontalface_alt2.xml */; };
 		2CEE64C81236B2A80073B855 /* OpenCV.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2CEE64C71236B2A80073B855 /* OpenCV.framework */; };
 		8D5B49B4048680CD000E48DA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7ADFEA557BF11CA2CBB /* Cocoa.framework */; };
 /* End PBXBuildFile section */
@@ -47,6 +48,16 @@
 			dstSubfolderSpec = 10;
 			files = (
 				2C6FB733123890D10065C148 /* OpenCV.framework in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2CB49C8B1243D26D00A6F97A /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 7;
+			files = (
+				2CB49C811243D26400A6F97A /* haarcascade_frontalface_alt2.xml in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -146,6 +157,7 @@
 				8D5B49B1048680CD000E48DA /* Sources */,
 				8D5B49B3048680CD000E48DA /* Frameworks */,
 				2C6FB73A123890D80065C148 /* CopyFiles */,
+				2CB49C8B1243D26D00A6F97A /* CopyFiles */,
 			);
 			buildRules = (
 			);

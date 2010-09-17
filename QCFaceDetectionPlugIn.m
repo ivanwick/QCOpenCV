@@ -75,17 +75,21 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 		*/
 		
 		/** allocation here */
-		// IplImage for the frame (just the struct, whose pointers to image data we
-		// will set as necessary.
+		// IplImage for the frame (just the struct, whose pointers/data members
+		// we will set as necessary in the style of CVOCV
 		ocvImage = (IplImage*)malloc(sizeof(IplImage));
 		
 		// IplImage for downsampling?
 		/* ??? */
 		
 		// CvClassifierCascade
-		cascade = (CvHaarClassifierCascade*)cvLoad(
-												   "/usr/local/share/opencv/haarcascades/haarcascade_frontalface_alt2.xml"
-												   , 0, 0, 0);
+		NSBundle * pluginBundle = [NSBundle bundleForClass:[self class]];
+		NSString * cascadeFile = [pluginBundle pathForResource:@"haarcascade_frontalface_alt2"
+														ofType:@"xml"];		
+		NSLog(@"%@, %@", pluginBundle, cascadeFile);
+		
+		cascade = (CvHaarClassifierCascade*)cvLoad([cascadeFile UTF8String],
+												   0, 0, 0);
 		
 		// CvMemStorage
 		storage = cvCreateMemStorage(0);
