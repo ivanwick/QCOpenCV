@@ -89,11 +89,6 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 		
 		// CvMemStorage
 		storage = cvCreateMemStorage(0);
-		
-		/**/
-		
-		/* for testing */
-		cvNamedWindow("mainWin", CV_WINDOW_AUTOSIZE);
 	}
 	
 	return self;
@@ -324,11 +319,9 @@ Here you need to declare the input / output properties as dynamic as Quartz Comp
 	if (lastTest == NO && self.inputTest == YES) {
 		lastTest = self.inputTest;
 		NSLog(@"booltest");
-		cvShowImage("mainWin", ocvImage);
 	}
 	lastTest = self.inputTest;
 	self.outputTest = self.inputTest;
-	// NSLog(@"lastBool");
 		
 	
 	[qcImage unlockBufferRepresentation];
